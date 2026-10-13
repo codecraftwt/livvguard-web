@@ -22,6 +22,8 @@ const modules = [
   { icon: ShieldCheck, title: "Audit & compliance", text: "Transparent records that hold up to review." },
 ];
 
+const notes = ["One shared record", "Real-time updates", "No paperwork"];
+
 export default function Modules() {
   return (
     <section id="features" className="relative py-28 sm:py-36">
@@ -31,27 +33,35 @@ export default function Modules() {
           assigning duty hours to verifying every report.
         </SectionHeading>
 
-        <Reveal className="mt-8 flex flex-wrap justify-center gap-2 text-sm text-white/55">
-          {["One shared record", "Real-time updates", "No paperwork"].map((tag) => (
-            <span key={tag} className="rounded-full border border-line px-4 py-1.5">
-              {tag}
-            </span>
-          ))}
-        </Reveal>
+        <Reveal className="mt-16 overflow-hidden rounded-3xl border border-line bg-panel">
+          <div className="flex flex-col gap-4 border-b border-line px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <p className="text-sm font-medium tracking-wide text-white/70">Eight parts of one operations hub</p>
+            <ul className="flex flex-wrap gap-2">
+              {notes.map((note) => (
+                <li key={note} className="rounded-full bg-white/6 px-3 py-1 text-sm text-white/60">
+                  {note}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        <div className="mt-14 grid gap-x-2 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
-          {modules.map(({ icon: Icon, title, text }, i) => (
-            <Reveal key={title} delay={(i % 4) * 80}>
-              <div className="tile px-4 pb-9 pt-8 text-center">
-                <div className="tile-icon mx-auto grid size-24 place-items-center rounded-[1.6rem] border border-white/10 bg-linear-to-b from-panel-2 to-panel text-brand-soft">
-                  <Icon className="size-10" strokeWidth={1.6} />
+          <ul className="grid md:grid-cols-2">
+            {modules.map(({ icon: Icon, title, text }) => (
+              <li
+                key={title}
+                className="flex gap-4 border-b border-line px-6 py-6 last:border-b-0 sm:px-8 md:odd:border-r md:nth-last-[-n+2]:border-b-0"
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand/25 bg-brand/10 text-brand-soft">
+                  <Icon className="size-5" strokeWidth={1.7} />
+                </span>
+                <div>
+                  <h3 className="text-lg font-semibold">{title}</h3>
+                  <p className="mt-1 leading-relaxed text-white/55">{text}</p>
                 </div>
-                <h3 className="mt-6 text-xl font-semibold">{title}</h3>
-                <p className="mx-auto mt-2 max-w-60 leading-relaxed text-white/55">{text}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
       </div>
     </section>
   );

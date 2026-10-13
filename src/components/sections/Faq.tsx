@@ -1,4 +1,3 @@
-import { Plus } from "lucide-react";
 import Button from "../Button";
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
@@ -33,26 +32,34 @@ const faqs = [
 export default function Faq() {
   return (
     <section id="faq" className="relative border-t border-line py-28 sm:py-36">
-      <div className="mx-auto grid max-w-7xl gap-14 px-5 sm:px-8 lg:grid-cols-[1fr_1.4fr]">
-        <div>
-          <SectionHeading align="left" eyebrow="FAQ" title="Before you book.">
-            The things operators ask us first. Anything else? Talk to our team directly.
-          </SectionHeading>
-          <Reveal delay={100} className="mt-8">
-            <Button href="/contact-us">Book a demo</Button>
-          </Reveal>
+      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+        <SectionHeading eyebrow="FAQ" title="Before you book.">
+          The things operators ask us first. Anything else? Talk to our team directly.
+        </SectionHeading>
+
+        <div className="mt-16 grid gap-5 md:grid-cols-2">
+          {faqs.map((f, i) => (
+            <Reveal key={f.q} delay={(i % 2) * 80} className="h-full">
+              <article className="relative flex h-full gap-5 overflow-hidden rounded-2xl border border-line bg-panel p-6 sm:p-7">
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 w-1 bg-linear-to-b from-brand via-brand-soft/70 to-transparent"
+                />
+                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/15 font-semibold tabular-nums text-brand-soft">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="text-lg font-semibold leading-snug text-white">{f.q}</h3>
+                  <p className="mt-3 leading-relaxed text-white/60">{f.a}</p>
+                </div>
+              </article>
+            </Reveal>
+          ))}
         </div>
 
-        <Reveal delay={100} className="divide-y divide-line rounded-3xl border border-line bg-panel/60">
-          {faqs.map((f) => (
-            <details key={f.q} className="group px-6 py-5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-white/3 sm:px-8">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg font-medium text-white/90 transition-colors group-hover:text-white">
-                {f.q}
-                <Plus className="size-5 shrink-0 text-brand-soft transition-transform group-open:rotate-45" />
-              </summary>
-              <p className="mt-4 leading-relaxed text-white/60">{f.a}</p>
-            </details>
-          ))}
+        <Reveal className="mt-8 flex flex-col items-start justify-between gap-5 rounded-2xl border border-brand/30 bg-linear-to-r from-brand/15 via-panel to-panel px-6 py-6 sm:flex-row sm:items-center sm:px-8">
+          <p className="text-lg text-white/80">Need an answer that is specific to your sites?</p>
+          <Button href="/contact-us">Book a demo</Button>
         </Reveal>
       </div>
     </section>

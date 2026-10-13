@@ -71,40 +71,6 @@ body {
   z-index: 6;
 }
 
-.tile {
-  position: relative;
-  isolation: isolate;
-  border-radius: 1.5rem;
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.tile::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background:
-    radial-gradient(120% 90% at 50% 24%, rgb(255 99 88 / 0.17), rgb(215 35 35 / 0.06) 52%, transparent 78%),
-    linear-gradient(rgb(255 255 255 / 0.043), rgb(255 255 255 / 0.01));
-  box-shadow:
-    0 22px 60px -22px rgb(215 35 35 / 0.5),
-    inset 0 1px 0 rgb(255 255 255 / 0.07);
-  opacity: 0;
-  transform: scale(0.93);
-  transition:
-    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.tile-icon {
-  transition:
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 0.45s,
-    color 0.45s,
-    border-color 0.45s;
-}
-
 .card-hover {
   transition:
     transform 0.18s,
@@ -113,22 +79,6 @@ body {
 }
 
 @media (hover: hover) {
-  .tile:hover {
-    transform: translateY(-4px);
-  }
-
-  .tile:hover::before {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .tile:hover .tile-icon {
-    transform: scale(1.05) translateY(-2px);
-    background-color: rgb(215 35 35 / 0.16);
-    border-color: rgb(255 99 88 / 0.35);
-    color: #ffc9c0;
-  }
-
   .card-hover:hover {
     transform: translateY(-3px);
     border-color: rgb(255 99 88 / 0.4);
@@ -136,16 +86,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tile,
-  .tile::before,
-  .tile-icon,
   .card-hover {
     transition: opacity 0.2s linear;
   }
 
-  .tile:hover,
-  .tile:hover::before,
-  .tile:hover .tile-icon,
   .card-hover:hover {
     transform: none;
   }
@@ -167,8 +111,4 @@ body {
       animation-range: entry calc(var(--reveal-offset, 0) * 1%) entry calc(45% + var(--reveal-offset, 0) * 1%);
     }
   }
-}
-
-details > summary::-webkit-details-marker {
-  display: none;
 }
