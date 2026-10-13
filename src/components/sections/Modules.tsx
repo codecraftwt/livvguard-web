@@ -33,35 +33,37 @@ export default function Modules() {
           assigning duty hours to verifying every report.
         </SectionHeading>
 
-        <Reveal className="mt-16 overflow-hidden rounded-3xl border border-line bg-panel">
-          <div className="flex flex-col gap-4 border-b border-line px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-            <p className="text-sm font-medium tracking-wide text-white/70">Eight parts of one operations hub</p>
-            <ul className="flex flex-wrap gap-2">
-              {notes.map((note) => (
-                <li key={note} className="rounded-full bg-white/6 px-3 py-1 text-sm text-white/60">
-                  {note}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <ul className="grid md:grid-cols-2">
-            {modules.map(({ icon: Icon, title, text }) => (
-              <li
-                key={title}
-                className="flex gap-4 border-b border-line px-6 py-6 last:border-b-0 sm:px-8 md:odd:border-r md:nth-last-[-n+2]:border-b-0"
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand/25 bg-brand/10 text-brand-soft">
-                  <Icon className="size-5" strokeWidth={1.7} />
-                </span>
-                <div>
-                  <h3 className="text-lg font-semibold">{title}</h3>
-                  <p className="mt-1 leading-relaxed text-white/55">{text}</p>
-                </div>
+        <Reveal className="mt-10 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <p className="text-sm font-medium tracking-wide text-white/70">Eight parts of one operations hub</p>
+          <ul className="flex flex-wrap gap-2">
+            {notes.map((note) => (
+              <li key={note} className="rounded-full border border-line px-3 py-1 text-sm text-white/60">
+                {note}
               </li>
             ))}
           </ul>
         </Reveal>
+      </div>
+
+      <div className="marquee-mask mt-8 overflow-hidden">
+        <ul className="marquee-track flex w-max gap-4 py-2">
+          {[...modules, ...modules].map(({ icon: Icon, title, text }, i) => (
+            <li
+              key={`${title}-${i}`}
+              {...(i >= modules.length ? { "data-clone": "" } : {})}
+              aria-hidden={i >= modules.length}
+              className="flex w-80 shrink-0 gap-4 rounded-2xl border border-line bg-panel p-6"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand/25 bg-brand/10 text-brand-soft">
+                <Icon className="size-5" strokeWidth={1.7} />
+              </span>
+              <div>
+                <h3 className="text-lg font-semibold">{title}</h3>
+                <p className="mt-1 leading-relaxed text-white/55">{text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
