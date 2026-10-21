@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import {
   CalendarClock,
   ChartNoAxesColumn,
-  Check,
-  ChevronDown,
-  CircleCheck,
   ClipboardCheck,
-  Clock,
   FileSearch,
   ListChecks,
   MonitorCheck,
@@ -19,147 +15,267 @@ import {
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
 
-type Module = {
+type HubRow = [string, string, number];
+
+type HubModule = {
   icon: LucideIcon;
   title: string;
+  sub: string;
   text: string;
-  highlight: string;
   checks: string[];
+  rows: HubRow[];
 };
 
-const modules: Module[] = [
+const modules: HubModule[] = [
   {
     icon: CalendarClock,
     title: "Duty hours",
-    text: "Plan shifts and assign hours to every guard.",
-    highlight: "Every shift planned",
-    checks: ["Shift roster sent to every guard", "Site coverage confirmed in advance", "Swaps and overtime auto-logged"],
+    sub: "Every shift, on the record",
+    text: "Guards clock in and out from their phone. Hours are tallied as they happen, so payroll and coverage are never a guess.",
+    checks: ["Clock-in verified by site location", "Coverage gaps flagged instantly", "Overtime tracked per guard"],
+    rows: [
+      ["Night shift, Gate A", "22:00 - 06:00", 92],
+      ["Day shift, Lobby", "06:00 - 14:00", 78],
+      ["Patrol, Parking", "14:00 - 22:00", 64],
+    ],
   },
   {
     icon: ListChecks,
     title: "Task assignment",
-    text: "Allocate specific tasks with clear responsibilities.",
-    highlight: "Every task clear",
-    checks: ["Tasks assigned with clear ownership", "Priorities set per post", "Acknowledgement logged instantly"],
+    sub: "The right guard, the right job",
+    text: "Supervisors assign checkpoints and patrols in a few taps. Guards see their tasks the moment they are sent.",
+    checks: ["Assign by guard, site or shift", "Guards confirm each task", "Overdue tasks escalate automatically"],
+    rows: [
+      ["Perimeter patrol", "Assigned", 100],
+      ["Fire exit check", "In progress", 55],
+      ["Visitor log review", "Pending", 18],
+    ],
   },
   {
     icon: ClipboardCheck,
     title: "Guard reports",
-    text: "Guards submit task reports right after duty. The central dashboard ensures every submitted report lands in one place, instantly.",
-    highlight: "One shared record",
+    sub: "One shared record",
+    text: "Guards submit task reports right after duty. The central dashboard makes sure every report lands in one place, instantly.",
     checks: ["Report filed straight after duty", "Timestamped at submission", "Lands in the central dashboard"],
+    rows: [
+      ["Gate A patrol report", "Just now", 100],
+      ["Lobby handover note", "4 min ago", 100],
+      ["Parking check report", "12 min ago", 100],
+    ],
   },
   {
     icon: Siren,
     title: "Incident details",
-    text: "Activity logs, timestamps and supporting evidence.",
-    highlight: "Evidence, logged",
-    checks: ["Activity described with context", "Timestamps on every entry", "Photo evidence attached"],
+    sub: "Capture it while it is fresh",
+    text: "Log what happened with photos, location and severity in under a minute. The right people are notified straight away.",
+    checks: ["Photos and notes attached on the spot", "Severity decides who is alerted", "Full timeline kept for every incident"],
+    rows: [
+      ["Door left unlocked", "Low", 24],
+      ["Unknown visitor, Gate B", "Medium", 58],
+      ["Alarm triggered, Block C", "High", 90],
+    ],
   },
   {
     icon: MonitorCheck,
     title: "Central dashboard",
-    text: "Every submitted report lands in one place, instantly.",
-    highlight: "One place, instantly",
-    checks: ["Every report in a single view", "Live status for each site", "Nothing lost in transit"],
+    sub: "Everything at a glance",
+    text: "See guards, reports and incidents across every site in one view. Nothing waits in a drawer or an inbox.",
+    checks: ["Live status for every site", "Filter by guard, site or date", "Share a view with one link"],
+    rows: [
+      ["Sites online", "12 of 12", 100],
+      ["Reports today", "148", 82],
+      ["Open incidents", "3", 20],
+    ],
   },
   {
     icon: ChartNoAxesColumn,
     title: "Performance",
-    text: "Track guard performance and spot issues early.",
-    highlight: "Issues spotted early",
-    checks: ["Completion rates per guard", "Trends across sites and shifts", "Early flags on weak spots"],
+    sub: "See who is doing great work",
+    text: "Punctuality, completed tasks and report quality come together in a clear score, so recognition is based on facts.",
+    checks: ["Scores update after every shift", "Compare sites and teams", "Spot training needs early"],
+    rows: [
+      ["On-time arrival", "96%", 96],
+      ["Tasks completed", "91%", 91],
+      ["Report quality", "84%", 84],
+    ],
   },
   {
     icon: FileSearch,
     title: "Report history",
-    text: "Historical and real-time reports, always accessible.",
-    highlight: "Always accessible",
-    checks: ["Search historical and live reports", "Filter by guard, site or date", "Export for clients and audits"],
+    sub: "Find any report in seconds",
+    text: "Every report ever filed is searchable. Look up a date, a guard or a keyword and open the original right away.",
+    checks: ["Search across all sites", "Filter by date, guard or type", "Export to PDF or spreadsheet"],
+    rows: [
+      ["Reports this month", "1,284", 88],
+      ['Matched "gate"', "96", 34],
+      ["Exported this week", "14", 12],
+    ],
   },
   {
     icon: ShieldCheck,
     title: "Audit & compliance",
-    text: "Transparent records that hold up to review.",
-    highlight: "Ready for review",
-    checks: ["Transparent, tamper-evident records", "Standards mapped to evidence", "Audit-ready at any time"],
+    sub: "Always ready for inspection",
+    text: "Records cannot be edited after submission, and every view is logged. When an audit comes, the evidence is ready.",
+    checks: ["Edits are blocked after submission", "Every access is logged", "One-click audit pack"],
+    rows: [
+      ["Records verified", "100%", 100],
+      ["Access reviews", "Up to date", 94],
+      ["Retention policy", "Active", 100],
+    ],
   },
 ];
 
-const pills = [
-  { label: "One shared record", kind: "dot" },
-  { label: "No paperwork", kind: "check" },
-  { label: "Real-time updates", kind: "dot" },
-] as const;
+type Layout = {
+  mobile: boolean;
+  cx: number;
+  cy: number;
+  pts: { x: number; y: number }[];
+};
 
-const LEFT = modules.map((_, i) => i).filter((i) => i < 4);
-const RIGHT = modules.map((_, i) => i).filter((i) => i >= 4);
-
-function CollapsedCard({
-  module,
-  active,
-  onSelect,
-}: {
-  module: Module;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  const Icon = module.icon;
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-current={active}
-      className={`card-hover group flex w-full items-center gap-3 rounded-2xl border p-4 text-left lg:min-h-28 lg:flex-col lg:items-start lg:gap-4 lg:p-5 ${
-        active
-          ? "border-brand/50 bg-brand/10 ring-1 ring-brand/20"
-          : "border-line bg-panel/60 hover:border-brand/40 hover:bg-white/5"
-      }`}
-    >
-      <span
-        className={`grid size-10 shrink-0 place-items-center rounded-xl border lg:size-11 ${
-          active ? "border-brand/50 bg-brand text-white" : "border-brand/25 bg-brand/10 text-brand-soft"
-        }`}
-      >
-        <Icon className="size-5" strokeWidth={1.7} />
-      </span>
-      <span className="flex flex-1 items-center justify-between gap-2 lg:w-full lg:items-end">
-        <span
-          className={`text-sm font-semibold leading-snug transition ${
-            active ? "text-white" : "text-white/85 group-hover:text-white"
-          }`}
-        >
-          {module.title}
-        </span>
-        <ChevronDown
-          aria-hidden
-          className={`size-4 shrink-0 transition ${
-            active
-              ? "rotate-180 text-brand-soft"
-              : "hint-pulse text-white/35 group-hover:text-brand-soft"
-          }`}
-        />
-      </span>
-      <span className="sr-only">Show {module.title} details</span>
-    </button>
-  );
-}
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+    <path d="m5 12 5 5 9-10" />
+  </svg>
+);
 
 export default function Modules() {
-  const [activeIndex, setActiveIndex] = useState(2);
-  const active = modules[activeIndex];
-  const ActiveIcon = active.icon;
+  const [active, setActive] = useState(-1);
+  const [count, setCount] = useState(148);
+  const [ready, setReady] = useState(false);
+  const [layout, setLayout] = useState<Layout | null>(null);
+
+  const stageRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const countRef = useRef<HTMLElement>(null);
+  const nodeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const packetRefs = useRef<(SVGCircleElement | null)[]>([]);
+  const layoutRef = useRef<Layout | null>(null);
+  const activeRef = useRef(-1);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const id = setTimeout(() => {
-      setActiveIndex((prev) => (prev + 1) % modules.length);
-    }, 10000);
-    return () => clearTimeout(id);
-  }, [activeIndex]);
+    activeRef.current = active;
+  }, [active]);
+
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    let raf = 0;
+    const compute = () => {
+      const mobile = window.matchMedia("(max-width: 820px)").matches;
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      const cx = w / 2;
+      const cy = h / 2;
+      const rx = w * 0.41;
+      const ry = h * 0.385;
+      const pts = modules.map((_, i) => {
+        const a = -Math.PI / 2 + (i * Math.PI) / 4;
+        return { x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) };
+      });
+      const next: Layout = { mobile, cx, cy, pts };
+      layoutRef.current = next;
+      setLayout(next);
+      setReady(true);
+    };
+    compute();
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(compute);
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount((c) => c + 1 + Math.floor(Math.random() * 3));
+    }, 3200);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const el = countRef.current;
+    if (!el) return;
+    el.classList.remove("tick");
+    void el.offsetWidth;
+    el.classList.add("tick");
+  }, [count]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && activeRef.current > -1) setActive(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    if (active > -1 && layoutRef.current?.mobile) {
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [active]);
+
+  useEffect(() => {
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const loop = (t: number) => {
+      const L = layoutRef.current;
+      if (L && !L.mobile) {
+        for (let i = 0; i < modules.length; i++) {
+          const c = packetRefs.current[i];
+          if (!c) continue;
+          const p = L.pts[i];
+          const u = (t / 2800 + i * 0.125) % 1;
+          const on = i === activeRef.current;
+          c.setAttribute("cx", String(p.x + (L.cx - p.x) * u));
+          c.setAttribute("cy", String(p.y + (L.cy - p.y) * u));
+          c.setAttribute("opacity", String(Math.sin(Math.PI * u) * (on ? 1 : 0.55)));
+          c.setAttribute("r", String(on ? 4.5 : 3));
+        }
+      }
+      if (!still) raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleSelect = (i: number) => setActive((prev) => (prev === i ? -1 : i));
+
+  const handleStageClick = (e: MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) setActive(-1);
+  };
+
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (layoutRef.current?.mobile) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    nodeRefs.current.forEach((n) => {
+      if (!n) return;
+      const r = n.getBoundingClientRect();
+      const dx = e.clientX - (r.left + r.width / 2);
+      const dy = e.clientY - (r.top + r.height / 2);
+      const d = Math.hypot(dx, dy);
+      const f = Math.max(0, 1 - d / 260);
+      n.style.setProperty("--tx", `${(dx / (d || 1)) * 14 * f}px`);
+      n.style.setProperty("--ty", `${(dy / (d || 1)) * 14 * f}px`);
+    });
+  };
+
+  const resetLean = () => {
+    nodeRefs.current.forEach((n) => {
+      if (!n) return;
+      n.style.setProperty("--tx", "0px");
+      n.style.setProperty("--ty", "0px");
+    });
+  };
+
+  const activeModule = active >= 0 ? modules[active] : null;
+  const ActiveIcon = activeModule?.icon;
 
   return (
-    <section id="features" className="relative overflow-hidden py-28 sm:py-36">
+    <section id="features" className="hub relative overflow-hidden py-28 sm:py-36">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-linear-to-b from-night via-[#150a10] to-night" />
         <div className="glow absolute left-1/2 top-6 h-72 w-176 max-w-full -translate-x-1/2 opacity-70" />
@@ -167,107 +283,155 @@ export default function Modules() {
 
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <SectionHeading eyebrow="Essential features" title="Everything your operation needs. One hub.">
-          The core features are designed to streamline security operations management - from
-          assigning duty hours to verifying every report.
+          The core features are designed to streamline security operations management - from assigning duty hours to
+          verifying every report.
         </SectionHeading>
 
-        <Reveal className="mt-10 text-center">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-white/45">
-            Eight parts of one operations hub
-          </p>
-        </Reveal>
+        <Reveal className="above-glow mt-10">
+          <div
+            ref={stageRef}
+            data-ready={ready ? "true" : undefined}
+            className={"hub-stage" + (active >= 0 ? " open" : "")}
+            onClick={handleStageClick}
+            onPointerMove={handlePointerMove}
+            onPointerLeave={resetLean}
+          >
+            <svg className="hub-links" aria-hidden="true">
+              {layout &&
+                !layout.mobile &&
+                modules.map((m, i) => (
+                  <line
+                    key={`line-${m.title}`}
+                    className={"hub-ln" + (active === i ? " on" : "")}
+                    x1={layout.pts[i].x}
+                    y1={layout.pts[i].y}
+                    x2={layout.cx}
+                    y2={layout.cy}
+                  />
+                ))}
+              {layout &&
+                !layout.mobile &&
+                modules.map((m, i) => (
+                  <circle
+                    key={`packet-${m.title}`}
+                    ref={(el) => {
+                      packetRefs.current[i] = el;
+                    }}
+                    className="hub-pk"
+                    r={3}
+                  />
+                ))}
+            </svg>
 
-        <Reveal delay={120} className="above-glow mt-8 sm:mt-10">
-          <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1fr_minmax(0,1.75fr)_1fr]">
-            <div className="order-2 grid grid-cols-2 gap-3 sm:gap-4 lg:order-1 lg:flex lg:flex-col lg:justify-center">
-              {LEFT.map((i) => (
-                <CollapsedCard
-                  key={modules[i].title}
-                  module={modules[i]}
-                  active={i === activeIndex}
-                  onSelect={() => setActiveIndex(i)}
-                />
-              ))}
+            <div className="hub-core">
+              <i />
+              <i />
+              <small>Central hub</small>
+              <strong ref={countRef}>{count}</strong>
+              <small>reports synced today</small>
+              <span className="hub-live">
+                <b />
+                Live
+              </span>
             </div>
 
-            <div className="order-1 lg:order-2">
-              <div
-                key={activeIndex}
-                className="panel-in card-hover relative z-10 flex h-full flex-col overflow-hidden rounded-3xl border border-brand/40 bg-panel/90 p-6 shadow-[0_40px_90px_-25px_rgba(0,0,0,0.95)] ring-1 ring-white/5 hover:shadow-[0_50px_110px_-25px_rgba(215,35,35,0.35)] sm:p-8"
-              >
-                <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-brand/20 blur-3xl" />
-
-                <div className="relative flex items-center justify-between gap-3">
-                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-brand-soft">
-                    {active.title} module
-                  </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-wider text-emerald-300">
-                    <span className="size-1.5 rounded-full bg-emerald-400" /> Live
+            {modules.map((m, i) => {
+              const Icon = m.icon;
+              const p = layout && !layout.mobile ? layout.pts[i] : null;
+              return (
+                <button
+                  key={m.title}
+                  ref={(el) => {
+                    nodeRefs.current[i] = el;
+                  }}
+                  type="button"
+                  aria-pressed={active === i}
+                  onClick={() => handleSelect(i)}
+                  className={"hub-node" + (active === i ? " act" : "")}
+                  style={{ "--n": i, left: p?.x, top: p?.y } as CSSProperties}
+                >
+                  <span className="hub-ico">
+                    <Icon strokeWidth={1.8} />
                   </span>
-                </div>
+                  {m.title}
+                </button>
+              );
+            })}
 
-                <h3 className="relative mt-3 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-                  {active.highlight}
-                </h3>
-
-                <div className="relative mt-5 flex flex-wrap gap-2">
-                  {pills.map((pill) => (
-                    <span
-                      key={pill.label}
-                      className="inline-flex items-center gap-2 rounded-full border border-line bg-white/5 px-3.5 py-1.5 text-sm text-white/70"
+            <section
+              ref={panelRef}
+              className="hub-panel"
+              role="region"
+              aria-live="polite"
+              aria-label="Module details"
+            >
+              {activeModule && ActiveIcon && (
+                <div key={active}>
+                  <div className="hub-ph hub-r" style={{ "--i": 0 } as CSSProperties}>
+                    <span className="hub-ico">
+                      <ActiveIcon strokeWidth={1.8} />
+                    </span>
+                    <div>
+                      <h2>{activeModule.title}</h2>
+                      <p>{activeModule.sub}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="hub-x"
+                      aria-label="Close details"
+                      onClick={() => setActive(-1)}
                     >
-                      {pill.kind === "check" ? (
-                        <Check className="size-3.5 text-emerald-400" strokeWidth={3} />
-                      ) : (
-                        <span className="size-2 rounded-full bg-brand-soft" />
-                      )}
-                      {pill.label}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="relative mt-6 flex-1 rounded-2xl border border-line bg-white/3 p-5">
-                  <div className="flex items-start gap-4">
-                    <span className="grid size-14 shrink-0 place-items-center rounded-2xl border-2 border-brand/50 bg-brand/10 text-brand-soft">
-                      <ActiveIcon className="size-7" strokeWidth={1.6} />
-                    </span>
-                    <p className="leading-relaxed text-white/75">{active.text}</p>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.4}
+                        strokeLinecap="round"
+                      >
+                        <path d="M6 6l12 12M18 6 6 18" />
+                      </svg>
+                    </button>
                   </div>
 
-                  <ul className="mt-5 space-y-2.5">
-                    {active.checks.map((check) => (
-                      <li key={check} className="flex items-center gap-2.5 text-sm text-white/70">
-                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand/15">
-                          <Check className="size-3 text-brand-soft" strokeWidth={3} />
-                        </span>
-                        {check}
+                  <p className="hub-desc hub-r" style={{ "--i": 1 } as CSSProperties}>
+                    {activeModule.text}
+                  </p>
+
+                  <ul className="hub-checks">
+                    {activeModule.checks.map((c, ci) => (
+                      <li key={c} className="hub-r" style={{ "--i": ci + 2 } as CSSProperties}>
+                        <b>
+                          <CheckIcon />
+                        </b>
+                        {c}
                       </li>
                     ))}
                   </ul>
 
-                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-xs text-white/45">
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="size-3.5" /> Synced to hub · just now
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-400">
-                      <CircleCheck className="size-3.5" /> Verified
-                    </span>
+                  <div className="hub-feed hub-r" style={{ "--i": 5 } as CSSProperties}>
+                    {activeModule.rows.map((row, ri) => (
+                      <div key={row[0]} className="hub-row">
+                        <div className="l">
+                          <span>{row[0]}</span>
+                          <span>{row[1]}</span>
+                        </div>
+                        <div className="hub-bar">
+                          <div className="hub-fill" style={{ "--p": row[2] / 100, "--k": ri } as CSSProperties} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="hub-foot hub-r" style={{ "--i": 6 } as CSSProperties}>
+                    <span>Synced to hub, just now</span>
+                    <span className="ok">Verified</span>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="order-3 grid grid-cols-2 gap-3 sm:gap-4 lg:flex lg:flex-col lg:justify-center">
-              {RIGHT.map((i) => (
-                <CollapsedCard
-                  key={modules[i].title}
-                  module={modules[i]}
-                  active={i === activeIndex}
-                  onSelect={() => setActiveIndex(i)}
-                />
-              ))}
-            </div>
+              )}
+            </section>
           </div>
+
+          <p className="hub-hint">Click a module to open it. Click it again, or press Esc, to close.</p>
         </Reveal>
       </div>
     </section>
